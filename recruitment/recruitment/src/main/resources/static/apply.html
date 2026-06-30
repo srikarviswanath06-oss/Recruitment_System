@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Apply Jobs</title>
+    <style>
+        body{
+            font-family:Arial;
+            background:#0f172a;
+            color:white;
+            padding:30px;
+        }
+
+        .job-card{
+            background:#1e293b;
+            padding:20px;
+            margin:15px 0;
+            border-radius:10px;
+        }
+
+        button{
+            padding:8px 15px;
+            background:#22c55e;
+            border:none;
+            color:white;
+            border-radius:5px;
+            cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Available Jobs</h2>
+<div id="jobs"></div>
+
+<script>
+
+    const userId = localStorage.getItem("userId");
+
+    fetch("http://localhost:8080/jobs/all")
+        .then(res=>res.json())
+        .then(jobs=>{
+            const container=document.getElementById("jobs");
+
+            jobs.forEach(job=>{
+                container.innerHTML+=`
+        <div class="job-card">
+            <h3>${job.title}</h3>
+            <p>Location: ${job.location}</p>
+            <p>Salary: ₹${job.salary}</p>
+            <input type="file" id="file-${job.id}">
+            <button onclick="apply(${job.id})">Apply</button>
+        </div>
+        `;
+            });
+        });
+
+    function apply(jobId){
+
+        const file=document.getElementById("file-"+jobId).files[0];
+
+        if(!file){
+            alert("Upload resume");
+            return;
+        }
+
+        const formData=new FormData();
+        formData.append("userId",userId);
+        formData.append("jobId",jobId);
+        formData.append("resume",file);
+
+        fetch("http://localhost:8080/applications/apply",{
+            method:"POST",
+            body:formData
+        })
+            .then(res=>res.text())
+            .then(data=>{
+                alert(data);
+            });
+    }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candidate Dashboard</title>
+    <meta charset="UTF-8">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+        }
+
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #0b1220;
+            padding: 30px 20px;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            color: #38bdf8;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar a:hover {
+            background: #1e293b;
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            flex: 1;
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .card p {
+            font-size: 28px;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: #334155;
+        }
+
+        tr:hover {
+            background: #273549;
+        }
+
+        .status-pending {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .status-approved {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .status-rejected {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .apply-box {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 16px;
+            margin-top: 30px;
+        }
+
+        input[type="file"] {
+            margin-top: 10px;
+        }
+
+        button {
+            background: #3b82f6;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+        <h2 id="candidateName">Candidate</h2>
+        <a href="#">Dashboard</a>
+        <a href="#applySection">Apply Jobs</a>
+        <a onclick="logout()">Logout</a>
+    </div>
+
+    <div class="content">
+
+        <h1>Dashboard</h1>
+
+        <div class="card-row">
+            <div class="card">
+                <h3>Total Applications</h3>
+                <p id="totalCount">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Approved</h3>
+                <p id="approvedCount" style="color:#22c55e">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Rejected</h3>
+                <p id="rejectedCount" style="color:#ef4444">0</p>
+            </div>
+        </div>
+
+        <h2>My Applications</h2>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Job</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="applicationTable"></tbody>
+        </table>
+
+        <div id="applySection" class="apply-box">
+            <h2>Available Jobs</h2>
+            <div id="jobList"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+    const userId = localStorage.getItem("userId");
+    const name = localStorage.getItem("name");
+
+    if (!userId) {
+        window.location.href = "login.html";
+    }
+
+    document.getElementById("candidateName").innerText = name;
+
+    function loadApplications() {
+
+        fetch(`http://localhost:8080/applications/user/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+
+                let total = data.length;
+                let approved = 0;
+                let rejected = 0;
+
+                const table = document.getElementById("applicationTable");
+                table.innerHTML = "";
+
+                data.forEach(app => {
+
+                    if (app.status === "APPROVED") approved++;
+                    if (app.status === "REJECTED") rejected++;
+
+                    let statusClass = "";
+                    if (app.status === "PENDING") statusClass = "status-pending";
+                    if (app.status === "APPROVED") statusClass = "status-approved";
+                    if (app.status === "REJECTED") statusClass = "status-rejected";
+
+                    table.innerHTML += `
+                    <tr>
+                        <td>${app.jobTitle}</td>
+                        <td class="${statusClass}">${app.status}</td>
+                    </tr>
+                `;
+                });
+
+                document.getElementById("totalCount").innerText = total;
+                document.getElementById("approvedCount").innerText = approved;
+                document.getElementById("rejectedCount").innerText = rejected;
+            });
+    }
+
+    function loadJobs() {
+
+        fetch("http://localhost:8080/jobs/all")
+            .then(res => res.json())
+            .then(jobs => {
+
+                const jobList = document.getElementById("jobList");
+                jobList.innerHTML = "";
+
+                jobs.forEach(job => {
+
+                    jobList.innerHTML += `
+                    <div style="margin-bottom:20px;">
+                        <h3>${job.title}</h3>
+                        <p>${job.location} | ₹${job.salary}</p>
+                        <input type="file" id="file_${job.id}">
+                        <button onclick="applyJob(${job.id})">Apply</button>
+                    </div>
+                `;
+                });
+            });
+    }
+
+    function applyJob(jobId) {
+
+        const fileInput = document.getElementById("file_" + jobId);
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert("Upload resume first");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("userId", userId);
+        formData.append("jobId", jobId);
+        formData.append("resume", file);
+
+        fetch("http://localhost:8080/applications/apply", {
+            method: "POST",
+            body: formData
+        })
+            .then(res => res.text())
+            .then(msg => {
+                alert(msg);
+                loadApplications();
+            });
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "login.html";
+    }
+
+    loadApplications();
+    loadJobs();
+
+</script>
+
+
+</body>
+</html>

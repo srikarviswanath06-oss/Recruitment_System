@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HR Dashboard</title>
+    <style>
+        body{
+            background:#0f172a;
+            color:white;
+            font-family:Arial;
+            padding:30px;
+        }
+
+        table{
+            width:100%;
+            background:#1e293b;
+            border-collapse:collapse;
+        }
+
+        th,td{
+            padding:12px;
+            border-bottom:1px solid #334155;
+        }
+
+        button{
+            padding:6px 12px;
+            border:none;
+            border-radius:5px;
+            cursor:pointer;
+        }
+
+        .approve{background:#22c55e;color:white;}
+        .reject{background:#ef4444;color:white;}
+    </style>
+</head>
+<body>
+
+<h2>HR Dashboard</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Candidate</th>
+        <th>Job</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+
+    function loadApplications() {
+
+        fetch("http://localhost:8080/applications/all")
+            .then(response => response.json())
+            .then(data => {
+
+                let table = document.getElementById("tableBody"); // FIXED ID
+                table.innerHTML = "";
+
+                data.forEach(app => {
+
+                    let row = `
+                    <tr>
+                        <td>${app.candidateName}</td>
+                        <td>${app.jobTitle}</td>
+                        <td>${app.status}</td>
+                        <td>
+                            <a href="/applications/resume/${app.resumeFileName}" target="_blank">
+                                View Resume
+                            </a>
+                            <br/><br/>
+                            <button class="approve" onclick="approve(${app.id})">Approve</button>
+                            <button class="reject" onclick="reject(${app.id})">Reject</button>
+                        </td>
+                    </tr>
+                `;
+
+                    table.innerHTML += row;
+                });
+            });
+    }
+
+    function approve(id) {
+        fetch(`/applications/approve/${id}`, {
+            method: "PUT"
+        }).then(() => loadApplications());
+    }
+
+    function reject(id) {
+        fetch(`/applications/reject/${id}`, {
+            method: "PUT"
+        }).then(() => loadApplications());
+    }
+
+    window.onload = loadApplications;
+
+</script>
+
+
+
+</body>
+</html>
